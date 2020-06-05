@@ -58,6 +58,8 @@ func NewTextReporter(m *Metrics) Reporter {
 	const fmtstr = "Requests\t[total, rate, throughput]\t%d, %.2f, %.2f\n" +
 		"Duration\t[total, attack, wait]\t%s, %s, %s\n" +
 		"Latencies\t[min, mean, 50, 90, 95, 99, max]\t%s, %s, %s, %s, %s, %s, %s\n" +
+		"Request Connect Latencies\t[min, mean, 50, 90, 95, 99, max]\t%s, %s, %s, %s, %s, %s, %s\n" +
+		"Response TTFB Latencies\t[min, mean, 50, 90, 95, 99, max]\t%s, %s, %s, %s, %s, %s, %s\n" +
 		"Bytes In\t[total, mean]\t%d, %.2f\n" +
 		"Bytes Out\t[total, mean]\t%d, %.2f\n" +
 		"Success\t[ratio]\t%.2f%%\n" +
@@ -76,7 +78,25 @@ func NewTextReporter(m *Metrics) Reporter {
 			round(m.Latencies.P90),
 			round(m.Latencies.P95),
 			round(m.Latencies.P99),
-			round(m.Latencies.Max),
+
+			round(m.ConnectLatencies.Max),
+			round(m.ConnectLatencies.Min),
+			round(m.ConnectLatencies.Mean),
+			round(m.ConnectLatencies.P50),
+			round(m.ConnectLatencies.P90),
+			round(m.ConnectLatencies.P95),
+			round(m.ConnectLatencies.P99),
+			round(m.ConnectLatencies.Max),
+
+			round(m.ResponseFirstByteLatencies.Max),
+			round(m.ResponseFirstByteLatencies.Min),
+			round(m.ResponseFirstByteLatencies.Mean),
+			round(m.ResponseFirstByteLatencies.P50),
+			round(m.ResponseFirstByteLatencies.P90),
+			round(m.ResponseFirstByteLatencies.P95),
+			round(m.ResponseFirstByteLatencies.P99),
+			round(m.ResponseFirstByteLatencies.Max),
+
 			m.BytesIn.Total, m.BytesIn.Mean,
 			m.BytesOut.Total, m.BytesOut.Mean,
 			m.Success*100,

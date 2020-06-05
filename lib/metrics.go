@@ -12,6 +12,16 @@ import (
 type Metrics struct {
 	// Latencies holds computed request latency metrics.
 	Latencies LatencyMetrics `json:"latencies"`
+	//
+	ConnectLatencies LatencyMetrics `json:"connect_latencies"`
+	DialLatencies LatencyMetrics `json:"dial_latencies"`
+	TLSHandshakeLatencies LatencyMetrics `json:"tls_handshake_latencies"`
+	HeaderSendLatencies LatencyMetrics `json:"header_send_latencies"`
+	RequestSendLatencies LatencyMetrics `json:"request_send_latencies"`
+	ResponseFirstByteLatencies LatencyMetrics `json:"response_first_byte_latencies"`
+
+
+
 	// Histogram, only if requested
 	Histogram *Histogram `json:"buckets,omitempty"`
 	// BytesIn holds computed incoming byte metrics.
@@ -56,6 +66,12 @@ func (m *Metrics) Add(r *Result) {
 	m.BytesIn.Total += r.BytesIn
 
 	m.Latencies.Add(r.Latency)
+	m.ConnectLatencies.Add(r.RequestConnectLatency)
+	m.DialLatencies.Add(r.DialLatency)
+	m.HeaderSendLatencies.Add(r.HeaderSendLatency)
+	m.RequestSendLatencies.Add(r.BodySendLatency)
+	m.ResponseFirstByteLatencies.Add(r.ResponseFirstByteLatency)
+
 
 	if m.Earliest.IsZero() || m.Earliest.After(r.Timestamp) {
 		m.Earliest = r.Timestamp

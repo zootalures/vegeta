@@ -36,6 +36,13 @@ type Result struct {
 	Method    string        `json:"method"`
 	URL       string        `json:"url"`
 	Headers   http.Header   `json:"headers"`
+	// trace stats
+	RequestConnectLatency    time.Duration `json:"request_connection_latency"`
+	DialLatency              time.Duration `json:"dial_latency"`
+	TLSHandshakeLatency      time.Duration `json:"tls_handshake_latency"`
+	HeaderSendLatency        time.Duration `json:"header_send_latency"`
+	BodySendLatency          time.Duration `json:"request_send_latency"`
+	ResponseFirstByteLatency time.Duration `json:"response_first_byte_latency"`
 }
 
 // End returns the time at which a Result ended.
@@ -54,6 +61,11 @@ func (r Result) Equal(other Result) bool {
 		bytes.Equal(r.Body, other.Body) &&
 		r.Method == other.Method &&
 		r.URL == other.URL &&
+		r.DialLatency == other.DialLatency &&
+		r.TLSHandshakeLatency == other.TLSHandshakeLatency &&
+		r.HeaderSendLatency == other.HeaderSendLatency &&
+		r.BodySendLatency == other.BodySendLatency &&
+		r.ResponseFirstByteLatency == other.ResponseFirstByteLatency &&
 		headerEqual(r.Headers, other.Headers)
 }
 
