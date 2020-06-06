@@ -62,6 +62,8 @@ func NewTextReporter(m *Metrics) Reporter {
 		"Response TTFB Latencies\t[min, mean, 50, 90, 95, 99, max]\t%s, %s, %s, %s, %s, %s, %s\n" +
 		"Bytes In\t[total, mean]\t%d, %.2f\n" +
 		"Bytes Out\t[total, mean]\t%d, %.2f\n" +
+		"Connections Made\t[total, mean]\t%d, %.4f\n" +
+		"TLS Handshakes\t[total, mean]\t%d, %.4f\n" +
 		"Success\t[ratio]\t%.2f%%\n" +
 		"Status Codes\t[code:count]\t"
 
@@ -98,6 +100,10 @@ func NewTextReporter(m *Metrics) Reporter {
 
 			m.BytesIn.Total, m.BytesIn.Mean,
 			m.BytesOut.Total, m.BytesOut.Mean,
+
+			m.DialCount, float64(m.DialCount)/float64(m.Requests),
+			m.TLSHandShakeCount, float64(m.TLSHandShakeCount)/float64(m.Requests),
+
 			m.Success*100,
 		); err != nil {
 			return err

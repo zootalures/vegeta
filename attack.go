@@ -41,7 +41,7 @@ func attackCmd() command {
 	fs.BoolVar(&opts.http2, "http2", true, "Send HTTP/2 requests when supported by the server")
 	fs.BoolVar(&opts.h2c, "h2c", false, "Send HTTP/2 requests without TLS encryption")
 	fs.BoolVar(&opts.insecure, "insecure", false, "Ignore invalid server TLS certificates")
-	fs.IntVar(&opts.sessionCacheSize, "session-cache-size", 32, "TLS session cache size ")
+	fs.IntVar(&opts.sessionCacheSize, "session-cache-size", 0, "TLS session cache size ")
 	fs.BoolVar(&opts.lazy, "lazy", false, "Read targets lazily")
 	fs.DurationVar(&opts.duration, "duration", 0, "Duration of the test [0 = forever]")
 	fs.DurationVar(&opts.timeout, "timeout", vegeta.DefaultTimeout, "Requests timeout")
