@@ -14,13 +14,14 @@ type Metrics struct {
 	Latencies LatencyMetrics `json:"latencies"`
 	//
 	ConnectLatencies LatencyMetrics `json:"connect_latencies"`
-	DialLatencies LatencyMetrics `json:"dial_latencies"`
-	TLSHandshakeLatencies LatencyMetrics `json:"tls_handshake_latencies"`
-	HeaderSendLatencies LatencyMetrics `json:"header_send_latencies"`
-	RequestSendLatencies LatencyMetrics `json:"request_send_latencies"`
+	DialCount        uint64         `json:"dial_count"`
+	DialLatencies    LatencyMetrics `json:"dial_latencies"`
+
+	TLSHandShakeCount          uint64         `json:"tls_handshake_count"`
+	TLSHandshakeLatencies      LatencyMetrics `json:"tls_handshake_latencies"`
+	HeaderSendLatencies        LatencyMetrics `json:"header_send_latencies"`
+	RequestSendLatencies       LatencyMetrics `json:"request_send_latencies"`
 	ResponseFirstByteLatencies LatencyMetrics `json:"response_first_byte_latencies"`
-
-
 
 	// Histogram, only if requested
 	Histogram *Histogram `json:"buckets,omitempty"`
@@ -67,11 +68,19 @@ func (m *Metrics) Add(r *Result) {
 
 	m.Latencies.Add(r.Latency)
 	m.ConnectLatencies.Add(r.RequestConnectLatency)
-	m.DialLatencies.Add(r.DialLatency)
+	if r.Dialled {
+		m.DialLatencies.Add(r.DialLatency)
+		m.DialCount++
+	}
+
+	if r.TLSHandshake {
+		m.TLSHandshakeLatencies.Add(r.TLSHandshakeLatency)
+		m.TLSHandShakeCount++
+	}
+
 	m.HeaderSendLatencies.Add(r.HeaderSendLatency)
 	m.RequestSendLatencies.Add(r.BodySendLatency)
 	m.ResponseFirstByteLatencies.Add(r.ResponseFirstByteLatency)
-
 
 	if m.Earliest.IsZero() || m.Earliest.After(r.Timestamp) {
 		m.Earliest = r.Timestamp
@@ -123,11 +132,28 @@ func (m *Metrics) Close() {
 	m.BytesIn.Mean = float64(m.BytesIn.Total) / float64(m.Requests)
 	m.BytesOut.Mean = float64(m.BytesOut.Total) / float64(m.Requests)
 	m.Success = float64(m.success) / float64(m.Requests)
-	m.Latencies.Mean = time.Duration(float64(m.Latencies.Total) / float64(m.Requests))
-	m.Latencies.P50 = m.Latencies.Quantile(0.50)
-	m.Latencies.P90 = m.Latencies.Quantile(0.90)
-	m.Latencies.P95 = m.Latencies.Quantile(0.95)
-	m.Latencies.P99 = m.Latencies.Quantile(0.99)
+
+	for _, latency := range []*LatencyMetrics{&m.Latencies, &m.ConnectLatencies,
+		&m.RequestSendLatencies, &m.HeaderSendLatencies, &m.ResponseFirstByteLatencies} {
+		latency.Mean = time.Duration(float64(latency.Total) / float64(m.Requests))
+		latency.P50 = latency.Quantile(0.50)
+		latency.P90 = latency.Quantile(0.90)
+		latency.P95 = latency.Quantile(0.95)
+		latency.P99 = latency.Quantile(0.99)
+	}
+
+	m.DialLatencies.Mean = time.Duration(float64(m.DialLatencies.Total) / float64(m.DialCount))
+	m.DialLatencies.P50 = m.DialLatencies.Quantile(0.50)
+	m.DialLatencies.P90 = m.DialLatencies.Quantile(0.90)
+	m.DialLatencies.P95 = m.DialLatencies.Quantile(0.95)
+	m.DialLatencies.P99 = m.DialLatencies.Quantile(0.99)
+
+	m.TLSHandshakeLatencies.Mean = time.Duration(float64(m.TLSHandshakeLatencies.Total) / float64(m.TLSHandShakeCount))
+	m.TLSHandshakeLatencies.P50 = m.TLSHandshakeLatencies.Quantile(0.50)
+	m.TLSHandshakeLatencies.P90 = m.TLSHandshakeLatencies.Quantile(0.90)
+	m.TLSHandshakeLatencies.P95 = m.TLSHandshakeLatencies.Quantile(0.95)
+	m.TLSHandshakeLatencies.P99 = m.TLSHandshakeLatencies.Quantile(0.99)
+
 }
 
 func (m *Metrics) init() {

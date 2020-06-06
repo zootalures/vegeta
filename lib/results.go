@@ -38,7 +38,9 @@ type Result struct {
 	Headers   http.Header   `json:"headers"`
 	// trace stats
 	RequestConnectLatency    time.Duration `json:"request_connection_latency"`
+	Dialled                  bool          `json:"dialled"`
 	DialLatency              time.Duration `json:"dial_latency"`
+	TLSHandshake             bool          `json:"tls_handshake"`
 	TLSHandshakeLatency      time.Duration `json:"tls_handshake_latency"`
 	HeaderSendLatency        time.Duration `json:"header_send_latency"`
 	BodySendLatency          time.Duration `json:"request_send_latency"`

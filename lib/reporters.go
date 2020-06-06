@@ -78,8 +78,8 @@ func NewTextReporter(m *Metrics) Reporter {
 			round(m.Latencies.P90),
 			round(m.Latencies.P95),
 			round(m.Latencies.P99),
+			round(m.Latencies.Max),
 
-			round(m.ConnectLatencies.Max),
 			round(m.ConnectLatencies.Min),
 			round(m.ConnectLatencies.Mean),
 			round(m.ConnectLatencies.P50),
@@ -88,7 +88,6 @@ func NewTextReporter(m *Metrics) Reporter {
 			round(m.ConnectLatencies.P99),
 			round(m.ConnectLatencies.Max),
 
-			round(m.ResponseFirstByteLatencies.Max),
 			round(m.ResponseFirstByteLatencies.Min),
 			round(m.ResponseFirstByteLatencies.Mean),
 			round(m.ResponseFirstByteLatencies.P50),

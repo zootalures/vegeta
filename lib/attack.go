@@ -176,7 +176,7 @@ func LocalAddr(addr net.IPAddr) func(*Attacker) {
 	return func(a *Attacker) {
 		tr := a.client.Transport.(*http.Transport)
 		a.dialer.LocalAddr = &net.TCPAddr{IP: addr.IP, Zone: addr.Zone}
-		tr.Dial = a.dialer.Dial
+		tr.DialContext = a.dialer.DialContext
 	}
 }
 
@@ -188,7 +188,7 @@ func KeepAlive(keepalive bool) func(*Attacker) {
 		tr.DisableKeepAlives = !keepalive
 		if !keepalive {
 			a.dialer.KeepAlive = 0
-			tr.Dial = a.dialer.Dial
+			tr.DialContext = a.dialer.DialContext
 		}
 	}
 }
@@ -394,9 +394,13 @@ func (ct *HttpTraceStats) WrapRequest(req *http.Request) *http.Request {
 		},
 		TLSHandshakeDone: func(state tls.ConnectionState, err error) {
 			ct.tlsHandShakeDone = time.Now()
+
 		},
 		WroteRequest: func(info httptrace.WroteRequestInfo) {
 			ct.bodySent = time.Now()
+		},
+		GotFirstResponseByte: func() {
+			ct.timeOfFirstResponseByte = time.Now()
 		},
 	}
 
@@ -410,15 +414,24 @@ func (ct *HttpTraceStats) ToResult(res *Result) {
 	res.RequestConnectLatency = ct.channelEnd.Sub(start)
 	if ct.dialled {
 		res.DialLatency = ct.dialEnd.Sub(ct.dialStart)
+		res.Dialled = true
 	}
-	if ct.tls {
+	if ct.tls && !ct.tlsHandShakeDone.IsZero() {
 		res.TLSHandshakeLatency = ct.tlsHandShakeDone.Sub(ct.tlsHandShakeStart)
+		res.TLSHandshake = true
 	}
 
-	res.HeaderSendLatency = ct.headersSent.Sub(ct.channelEnd)
-	res.BodySendLatency = ct.bodySent.Sub(ct.headersSent)
-	res.ResponseFirstByteLatency = ct.timeOfFirstResponseByte.Sub(ct.bodySent)
+	if !ct.headersSent.IsZero() {
 
+		res.HeaderSendLatency = ct.headersSent.Sub(start)
+	}
+
+	if !ct.bodySent.IsZero() {
+		res.BodySendLatency = ct.bodySent.Sub(start)
+	}
+	if !ct.timeOfFirstResponseByte.IsZero() {
+		res.ResponseFirstByteLatency = ct.timeOfFirstResponseByte.Sub(start)
+	}
 
 }
 

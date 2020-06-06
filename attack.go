@@ -41,6 +41,7 @@ func attackCmd() command {
 	fs.BoolVar(&opts.http2, "http2", true, "Send HTTP/2 requests when supported by the server")
 	fs.BoolVar(&opts.h2c, "h2c", false, "Send HTTP/2 requests without TLS encryption")
 	fs.BoolVar(&opts.insecure, "insecure", false, "Ignore invalid server TLS certificates")
+	fs.IntVar(&opts.sessionCacheSize, "session-cache-size", 32, "TLS session cache size ")
 	fs.BoolVar(&opts.lazy, "lazy", false, "Read targets lazily")
 	fs.DurationVar(&opts.duration, "duration", 0, "Duration of the test [0 = forever]")
 	fs.DurationVar(&opts.timeout, "timeout", vegeta.DefaultTimeout, "Requests timeout")
@@ -71,34 +72,35 @@ var (
 
 // attackOpts aggregates the attack function command options
 type attackOpts struct {
-	name           string
-	targetsf       string
-	format         string
-	outputf        string
-	bodyf          string
-	certf          string
-	keyf           string
-	rootCerts      csl
-	http2          bool
-	h2c            bool
-	insecure       bool
-	lazy           bool
-	chunked        bool
-	duration       time.Duration
-	timeout        time.Duration
-	rate           vegeta.Rate
-	workers        uint64
-	maxWorkers     uint64
-	connections    int
-	maxConnections int
-	redirects      int
-	maxBody        int64
-	headers        headers
-	proxyHeaders   headers
-	laddr          localAddr
-	keepalive      bool
-	resolvers      csl
-	unixSocket     string
+	name             string
+	targetsf         string
+	format           string
+	outputf          string
+	bodyf            string
+	certf            string
+	keyf             string
+	rootCerts        csl
+	http2            bool
+	h2c              bool
+	insecure         bool
+	sessionCacheSize int
+	lazy             bool
+	chunked          bool
+	duration         time.Duration
+	timeout          time.Duration
+	rate             vegeta.Rate
+	workers          uint64
+	maxWorkers       uint64
+	connections      int
+	maxConnections   int
+	redirects        int
+	maxBody          int64
+	headers          headers
+	proxyHeaders     headers
+	laddr            localAddr
+	keepalive        bool
+	resolvers        csl
+	unixSocket       string
 }
 
 // attack validates the attack arguments, sets up the
@@ -167,7 +169,7 @@ func attack(opts *attackOpts) (err error) {
 	}
 	defer out.Close()
 
-	tlsc, err := tlsConfig(opts.insecure, opts.certf, opts.keyf, opts.rootCerts)
+	tlsc, err := tlsConfig(opts.insecure, opts.certf, opts.keyf, opts.rootCerts, opts.sessionCacheSize)
 	if err != nil {
 		return err
 	}
@@ -212,7 +214,7 @@ func attack(opts *attackOpts) (err error) {
 }
 
 // tlsConfig builds a *tls.Config from the given options.
-func tlsConfig(insecure bool, certf, keyf string, rootCerts []string) (*tls.Config, error) {
+func tlsConfig(insecure bool, certf, keyf string, rootCerts []string, sessionCacheSize int) (*tls.Config, error) {
 	var err error
 	files := map[string][]byte{}
 	filenames := append([]string{certf, keyf}, rootCerts...)
@@ -247,6 +249,10 @@ func tlsConfig(insecure bool, certf, keyf string, rootCerts []string) (*tls.Conf
 				return nil, errBadCert
 			}
 		}
+	}
+
+	if sessionCacheSize > 0 {
+		c.ClientSessionCache = tls.NewLRUClientSessionCache(sessionCacheSize)
 	}
 
 	return &c, nil
