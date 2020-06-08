@@ -72,35 +72,35 @@ var (
 
 // attackOpts aggregates the attack function command options
 type attackOpts struct {
-	name             string
-	targetsf         string
-	format           string
-	outputf          string
-	bodyf            string
-	certf            string
-	keyf             string
-	rootCerts        csl
-	http2            bool
-	h2c              bool
-	insecure         bool
-	sessionCacheSize int
-	lazy             bool
-	chunked          bool
-	duration         time.Duration
-	timeout          time.Duration
-	rate             vegeta.Rate
-	workers          uint64
-	maxWorkers       uint64
-	connections      int
-	maxConnections   int
-	redirects        int
-	maxBody          int64
-	headers          headers
-	proxyHeaders     headers
-	laddr            localAddr
-	keepalive        bool
-	resolvers        csl
-	unixSocket       string
+	name                   string
+	targetsf               string
+	format                 string
+	outputf                string
+	bodyf                  string
+	certf                  string
+	keyf                   string
+	rootCerts              csl
+	http2                  bool
+	h2c                    bool
+	insecure               bool
+	sessionCacheSize       int
+	lazy                   bool
+	chunked                bool
+	duration               time.Duration
+	timeout                time.Duration
+	rate                   vegeta.Rate
+	workers                uint64
+	maxWorkers             uint64
+	connections                int
+	maxConnections             int
+	redirects                  int
+	maxBody                    int64
+	headers                    headers
+	proxyHeaders               headers
+	laddr                      localAddr
+	keepalive                  bool
+	resolvers                  csl
+	unixSocket                 string
 }
 
 // attack validates the attack arguments, sets up the

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"golang.org/x/net/http2"
 	"io"
 	"io/ioutil"
 	"math"
@@ -14,8 +15,6 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
-	"golang.org/x/net/http2"
 )
 
 // Attacker is an attack executor which wraps an http.Client
@@ -348,6 +347,7 @@ type HttpTraceStats struct {
 	// start indicates when the connection acquisition started
 	// this denotes the start of of measurement for connection stats
 	start time.Time
+
 	// channelEnd indicates when the connection acquisition endided
 	channelEnd time.Time
 
@@ -360,20 +360,29 @@ type HttpTraceStats struct {
 	idleTime time.Duration
 
 	tls                     bool
+	tlsResume               bool
 	tlsHandShakeStart       time.Time
 	tlsHandShakeDone        time.Time
 	headersSent             time.Time
 	bodySent                time.Time
 	timeOfFirstResponseByte time.Time
+
 }
 
+//var connCount uint64
+
 func (ct *HttpTraceStats) WrapRequest(req *http.Request) *http.Request {
+	//reqCount := atomic.AddUint64(&connCount, 1)
+
 	trace := &httptrace.ClientTrace{
 		GetConn: func(hostPort string) {
 			ct.start = time.Now()
+			//	log.Print("getting new connection")
 		},
 		GotConn: func(info httptrace.GotConnInfo) {
 			ct.channelEnd = time.Now()
+			//	log.Printf("%d got connection reused:%t idle %t idle %s", reqCount, info.Reused, info.WasIdle, info.IdleTime.String())
+
 			ct.reused = info.Reused
 			ct.wasIdle = info.WasIdle
 			ct.idleTime = info.IdleTime
@@ -382,17 +391,26 @@ func (ct *HttpTraceStats) WrapRequest(req *http.Request) *http.Request {
 			ct.headersSent = time.Now()
 		},
 		ConnectStart: func(network, addr string) {
+			// log.Printf("%d Opening new connection %s : %s", reqCount,network,addr )
 			ct.dialled = true
 			ct.dialStart = time.Now()
 		},
 		ConnectDone: func(network, addr string, err error) {
+			// 	log.Printf("%d Opened new connection", reqCount)
 			ct.dialEnd = time.Now()
 		},
 		TLSHandshakeStart: func() {
+
+			//	log.Printf("%d making new TLS handshake", reqCount)
 			ct.tls = true
 			ct.tlsHandShakeStart = time.Now()
 		},
 		TLSHandshakeDone: func(state tls.ConnectionState, err error) {
+			//log.Printf("%d: TLS handshake done complete:%s resume:%s",
+			//	connCount,
+			//	strconv.FormatBool(state.HandshakeComplete),
+			//	strconv.FormatBool(state.DidResume))
+			ct.tlsResume = state.DidResume
 			ct.tlsHandShakeDone = time.Now()
 
 		},
@@ -409,29 +427,34 @@ func (ct *HttpTraceStats) WrapRequest(req *http.Request) *http.Request {
 
 func (ct *HttpTraceStats) ToResult(res *Result) {
 
-	start := ct.start
+	markTime := ct.start
 
-	res.RequestConnectLatency = ct.channelEnd.Sub(start)
-	if ct.dialled {
+	res.RequestConnectLatency = ct.channelEnd.Sub(markTime)
+	markTime = ct.channelEnd
+	if ct.dialled && !ct.dialEnd.IsZero() {
 		res.DialLatency = ct.dialEnd.Sub(ct.dialStart)
 		res.Dialled = true
 	}
+
 	if ct.tls && !ct.tlsHandShakeDone.IsZero() {
-		res.TLSHandshakeLatency = ct.tlsHandShakeDone.Sub(ct.tlsHandShakeStart)
-		res.TLSHandshake = true
+		res.ServerHandshakeLatency = ct.tlsHandShakeDone.Sub(ct.tlsHandShakeStart)
+		res.TLSServerHandshake = true
 	}
 
 	if !ct.headersSent.IsZero() {
-
-		res.HeaderSendLatency = ct.headersSent.Sub(start)
+		res.HeaderSendLatency = ct.headersSent.Sub(markTime)
+		markTime = ct.headersSent
+		if !ct.bodySent.IsZero() {
+			res.BodySendLatency = ct.bodySent.Sub(markTime)
+			markTime = ct.bodySent
+		}
+		if !ct.timeOfFirstResponseByte.IsZero() {
+			res.ResponseFirstByteLatency = ct.timeOfFirstResponseByte.Sub(markTime)
+		}
 	}
 
-	if !ct.bodySent.IsZero() {
-		res.BodySendLatency = ct.bodySent.Sub(start)
-	}
-	if !ct.timeOfFirstResponseByte.IsZero() {
-		res.ResponseFirstByteLatency = ct.timeOfFirstResponseByte.Sub(start)
-	}
+	res.ReusedConnection = ct.reused
+	res.UsedIdleConnection = ct.reused
 
 }
 
@@ -470,6 +493,7 @@ func (a *Attacker) hit(tr Targeter, name string) *Result {
 	}
 
 	connTracker := HttpTraceStats{}
+
 	req = connTracker.WrapRequest(req)
 
 	if name != "" {

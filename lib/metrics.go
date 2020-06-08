@@ -13,9 +13,10 @@ type Metrics struct {
 	// Latencies holds computed request latency metrics.
 	Latencies LatencyMetrics `json:"latencies"`
 	//
-	ConnectLatencies LatencyMetrics `json:"connect_latencies"`
-	DialCount        uint64         `json:"dial_count"`
-	DialLatencies    LatencyMetrics `json:"dial_latencies"`
+	ConnectLatencies  LatencyMetrics `json:"connect_latencies"`
+	DialCount         uint64         `json:"dial_count"`
+	DialLatencies     LatencyMetrics `json:"dial_latencies"`
+	ConnectionsReused uint64         `json:"conn_reused_count"`
 
 	TLSHandShakeCount          uint64         `json:"tls_handshake_count"`
 	TLSHandshakeLatencies      LatencyMetrics `json:"tls_handshake_latencies"`
@@ -73,11 +74,15 @@ func (m *Metrics) Add(r *Result) {
 		m.DialCount++
 	}
 
-	if r.TLSHandshake {
-		m.TLSHandshakeLatencies.Add(r.TLSHandshakeLatency)
+	if r.TLSServerHandshake {
+		m.TLSHandshakeLatencies.Add(r.ServerHandshakeLatency)
+
 		m.TLSHandShakeCount++
 	}
 
+	if r.ReusedConnection {
+		m.ConnectionsReused++
+	}
 	m.HeaderSendLatencies.Add(r.HeaderSendLatency)
 	m.RequestSendLatencies.Add(r.BodySendLatency)
 	m.ResponseFirstByteLatencies.Add(r.ResponseFirstByteLatency)

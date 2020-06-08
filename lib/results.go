@@ -40,11 +40,14 @@ type Result struct {
 	RequestConnectLatency    time.Duration `json:"request_connection_latency"`
 	Dialled                  bool          `json:"dialled"`
 	DialLatency              time.Duration `json:"dial_latency"`
-	TLSHandshake             bool          `json:"tls_handshake"`
-	TLSHandshakeLatency      time.Duration `json:"tls_handshake_latency"`
+	TLSResume                bool          `json:"tls_resume"`
+	TLSServerHandshake       bool          `json:"tls_server_handshake"`
+	ServerHandshakeLatency   time.Duration `json:"tls_server_handshake_latency"`
 	HeaderSendLatency        time.Duration `json:"header_send_latency"`
 	BodySendLatency          time.Duration `json:"request_send_latency"`
 	ResponseFirstByteLatency time.Duration `json:"response_first_byte_latency"`
+	ReusedConnection         bool          `json:"reused_conn"`
+	UsedIdleConnection       bool          `json:"used_idle_conn"`
 }
 
 // End returns the time at which a Result ended.
@@ -64,10 +67,12 @@ func (r Result) Equal(other Result) bool {
 		r.Method == other.Method &&
 		r.URL == other.URL &&
 		r.DialLatency == other.DialLatency &&
-		r.TLSHandshakeLatency == other.TLSHandshakeLatency &&
+		r.ServerHandshakeLatency == other.ServerHandshakeLatency &&
 		r.HeaderSendLatency == other.HeaderSendLatency &&
 		r.BodySendLatency == other.BodySendLatency &&
 		r.ResponseFirstByteLatency == other.ResponseFirstByteLatency &&
+		r.ReusedConnection == other.ReusedConnection &&
+		r.UsedIdleConnection == other.UsedIdleConnection &&
 		headerEqual(r.Headers, other.Headers)
 }
 

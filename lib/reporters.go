@@ -63,7 +63,9 @@ func NewTextReporter(m *Metrics) Reporter {
 		"Bytes In\t[total, mean]\t%d, %.2f\n" +
 		"Bytes Out\t[total, mean]\t%d, %.2f\n" +
 		"Connections Made\t[total, mean]\t%d, %.4f\n" +
+		"Connections Reused\t[total, mean]\t%d, %.4f\n" +
 		"TLS Handshakes\t[total, mean]\t%d, %.4f\n" +
+		"TLS Handhsake Latencies\t[min, mean, 50, 90, 95, 99, max]\t%s, %s, %s, %s, %s, %s, %s\n" +
 		"Success\t[ratio]\t%.2f%%\n" +
 		"Status Codes\t[code:count]\t"
 
@@ -102,7 +104,16 @@ func NewTextReporter(m *Metrics) Reporter {
 			m.BytesOut.Total, m.BytesOut.Mean,
 
 			m.DialCount, float64(m.DialCount)/float64(m.Requests),
+			m.ConnectionsReused,  float64(m.ConnectionsReused)/float64(m.Requests),
 			m.TLSHandShakeCount, float64(m.TLSHandShakeCount)/float64(m.Requests),
+			round(m.TLSHandshakeLatencies.Min),
+			round(m.TLSHandshakeLatencies.Mean),
+			round(m.TLSHandshakeLatencies.P50),
+			round(m.TLSHandshakeLatencies.P90),
+			round(m.TLSHandshakeLatencies.P95),
+			round(m.TLSHandshakeLatencies.P99),
+			round(m.TLSHandshakeLatencies.Max),
+
 
 			m.Success*100,
 		); err != nil {
