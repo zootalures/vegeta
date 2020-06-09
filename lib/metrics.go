@@ -21,8 +21,9 @@ type Metrics struct {
 	TLSHandShakeCount          uint64         `json:"tls_handshake_count"`
 	TLSHandshakeLatencies      LatencyMetrics `json:"tls_handshake_latencies"`
 	HeaderSendLatencies        LatencyMetrics `json:"header_send_latencies"`
-	RequestSendLatencies       LatencyMetrics `json:"request_send_latencies"`
+	BodySendLatencies          LatencyMetrics `json:"request_send_latencies"`
 	ResponseFirstByteLatencies LatencyMetrics `json:"response_first_byte_latencies"`
+	ResponseReceiveLatencies   LatencyMetrics `json:"response_receive_latencies"`
 
 	// Histogram, only if requested
 	Histogram *Histogram `json:"buckets,omitempty"`
@@ -68,7 +69,7 @@ func (m *Metrics) Add(r *Result) {
 	m.BytesIn.Total += r.BytesIn
 
 	m.Latencies.Add(r.Latency)
-	m.ConnectLatencies.Add(r.RequestConnectLatency)
+	m.ConnectLatencies.Add(r.TotalConnectLatency)
 	if r.Dialled {
 		m.DialLatencies.Add(r.DialLatency)
 		m.DialCount++
@@ -84,9 +85,9 @@ func (m *Metrics) Add(r *Result) {
 		m.ConnectionsReused++
 	}
 	m.HeaderSendLatencies.Add(r.HeaderSendLatency)
-	m.RequestSendLatencies.Add(r.BodySendLatency)
+	m.BodySendLatencies.Add(r.BodySendLatency)
 	m.ResponseFirstByteLatencies.Add(r.ResponseFirstByteLatency)
-
+	m.ResponseReceiveLatencies.Add(r.ResponseReceiveLatency)
 	if m.Earliest.IsZero() || m.Earliest.After(r.Timestamp) {
 		m.Earliest = r.Timestamp
 	}
@@ -139,7 +140,7 @@ func (m *Metrics) Close() {
 	m.Success = float64(m.success) / float64(m.Requests)
 
 	for _, latency := range []*LatencyMetrics{&m.Latencies, &m.ConnectLatencies,
-		&m.RequestSendLatencies, &m.HeaderSendLatencies, &m.ResponseFirstByteLatencies} {
+		&m.BodySendLatencies, &m.HeaderSendLatencies, &m.ResponseFirstByteLatencies, &m.ResponseReceiveLatencies} {
 		latency.Mean = time.Duration(float64(latency.Total) / float64(m.Requests))
 		latency.P50 = latency.Quantile(0.50)
 		latency.P90 = latency.Quantile(0.90)

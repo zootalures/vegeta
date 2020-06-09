@@ -36,18 +36,32 @@ type Result struct {
 	Method    string        `json:"method"`
 	URL       string        `json:"url"`
 	Headers   http.Header   `json:"headers"`
-	// trace stats
-	RequestConnectLatency    time.Duration `json:"request_connection_latency"`
+	// Dialled: Was a new connection dialed for this request
 	Dialled                  bool          `json:"dialled"`
-	DialLatency              time.Duration `json:"dial_latency"`
-	TLSResume                bool          `json:"tls_resume"`
-	TLSServerHandshake       bool          `json:"tls_server_handshake"`
-	ServerHandshakeLatency   time.Duration `json:"tls_server_handshake_latency"`
-	HeaderSendLatency        time.Duration `json:"header_send_latency"`
-	BodySendLatency          time.Duration `json:"request_send_latency"`
-	ResponseFirstByteLatency time.Duration `json:"response_first_byte_latency"`
+	// Did this request re-use a previous keep-live connection
 	ReusedConnection         bool          `json:"reused_conn"`
+	// If so was it idle or were we queued on the pool
 	UsedIdleConnection       bool          `json:"used_idle_conn"`
+	// TLSResume: If a TLS session was created, was it resumed from a previous session
+	TLSResume                bool          `json:"tls_resume"`
+	// Did a TLS server handshake take place
+	TLSServerHandshake       bool          `json:"tls_server_handshake"`
+
+	// Total time spent during connect (includes Dial, Handshake latencies)
+	TotalConnectLatency      time.Duration `json:"request_connection_latency"`
+	// Part of Connect latency spent dialling a new connection
+	DialLatency              time.Duration `json:"dial_latency"`
+	//Part of connect spent waiting for the server to send a handshake
+	ServerHandshakeLatency   time.Duration `json:"tls_server_handshake_latency"`
+	// Time it took us to send request headers
+	HeaderSendLatency        time.Duration `json:"header_send_latency"`
+	// Time it took us to send request body
+	BodySendLatency          time.Duration `json:"body_send_latency"`
+	// Time it took the server to send the first byte of the response (after we sent the body)
+	// - may be negative if server replies out of turn
+	ResponseFirstByteLatency time.Duration `json:"response_first_byte_latency"`
+	// Time it took to receive the response headers and body
+	ResponseReceiveLatency time.Duration `json:"response_receive_latency"`
 }
 
 // End returns the time at which a Result ended.
@@ -73,6 +87,7 @@ func (r Result) Equal(other Result) bool {
 		r.ResponseFirstByteLatency == other.ResponseFirstByteLatency &&
 		r.ReusedConnection == other.ReusedConnection &&
 		r.UsedIdleConnection == other.UsedIdleConnection &&
+		r.ResponseReceiveLatency == other.ResponseReceiveLatency &&
 		headerEqual(r.Headers, other.Headers)
 }
 

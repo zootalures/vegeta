@@ -58,14 +58,17 @@ func NewTextReporter(m *Metrics) Reporter {
 	const fmtstr = "Requests\t[total, rate, throughput]\t%d, %.2f, %.2f\n" +
 		"Duration\t[total, attack, wait]\t%s, %s, %s\n" +
 		"Latencies\t[min, mean, 50, 90, 95, 99, max]\t%s, %s, %s, %s, %s, %s, %s\n" +
-		"Request Connect Latencies\t[min, mean, 50, 90, 95, 99, max]\t%s, %s, %s, %s, %s, %s, %s\n" +
-		"Response TTFB Latencies\t[min, mean, 50, 90, 95, 99, max]\t%s, %s, %s, %s, %s, %s, %s\n" +
+		"- TCP Connect\t[min, mean, 50, 90, 95, 99, max]\t%s, %s, %s, %s, %s, %s, %s\n" +
+		"- TLS Handhsake\t[min, mean, 50, 90, 95, 99, max]\t%s, %s, %s, %s, %s, %s, %s\n" +
+		"- Header Send\t[min, mean, 50, 90, 95, 99, max]\t%s, %s, %s, %s, %s, %s, %s\n" +
+		"- Body Send\t[min, mean, 50, 90, 95, 99, max]\t%s, %s, %s, %s, %s, %s, %s\n" +
+		"- Response TTFB\t[min, mean, 50, 90, 95, 99, max]\t%s, %s, %s, %s, %s, %s, %s\n" +
+		"- Response Receive\t[min, mean, 50, 90, 95, 99, max]\t%s, %s, %s, %s, %s, %s, %s\n" +
 		"Bytes In\t[total, mean]\t%d, %.2f\n" +
 		"Bytes Out\t[total, mean]\t%d, %.2f\n" +
 		"Connections Made\t[total, mean]\t%d, %.4f\n" +
 		"Connections Reused\t[total, mean]\t%d, %.4f\n" +
 		"TLS Handshakes\t[total, mean]\t%d, %.4f\n" +
-		"TLS Handhsake Latencies\t[min, mean, 50, 90, 95, 99, max]\t%s, %s, %s, %s, %s, %s, %s\n" +
 		"Success\t[ratio]\t%.2f%%\n" +
 		"Status Codes\t[code:count]\t"
 
@@ -84,13 +87,37 @@ func NewTextReporter(m *Metrics) Reporter {
 			round(m.Latencies.P99),
 			round(m.Latencies.Max),
 
-			round(m.ConnectLatencies.Min),
-			round(m.ConnectLatencies.Mean),
-			round(m.ConnectLatencies.P50),
-			round(m.ConnectLatencies.P90),
-			round(m.ConnectLatencies.P95),
-			round(m.ConnectLatencies.P99),
-			round(m.ConnectLatencies.Max),
+			round(m.DialLatencies.Min),
+			round(m.DialLatencies.Mean),
+			round(m.DialLatencies.P50),
+			round(m.DialLatencies.P90),
+			round(m.DialLatencies.P95),
+			round(m.DialLatencies.P99),
+			round(m.DialLatencies.Max),
+
+			round(m.TLSHandshakeLatencies.Min),
+			round(m.TLSHandshakeLatencies.Mean),
+			round(m.TLSHandshakeLatencies.P50),
+			round(m.TLSHandshakeLatencies.P90),
+			round(m.TLSHandshakeLatencies.P95),
+			round(m.TLSHandshakeLatencies.P99),
+			round(m.TLSHandshakeLatencies.Max),
+
+			round(m.HeaderSendLatencies.Min),
+			round(m.HeaderSendLatencies.Mean),
+			round(m.HeaderSendLatencies.P50),
+			round(m.HeaderSendLatencies.P90),
+			round(m.HeaderSendLatencies.P95),
+			round(m.HeaderSendLatencies.P99),
+			round(m.HeaderSendLatencies.Max),
+
+			round(m.BodySendLatencies.Min),
+			round(m.BodySendLatencies.Mean),
+			round(m.BodySendLatencies.P50),
+			round(m.BodySendLatencies.P90),
+			round(m.BodySendLatencies.P95),
+			round(m.BodySendLatencies.P99),
+			round(m.BodySendLatencies.Max),
 
 			round(m.ResponseFirstByteLatencies.Min),
 			round(m.ResponseFirstByteLatencies.Mean),
@@ -100,19 +127,20 @@ func NewTextReporter(m *Metrics) Reporter {
 			round(m.ResponseFirstByteLatencies.P99),
 			round(m.ResponseFirstByteLatencies.Max),
 
+			round(m.ResponseReceiveLatencies.Min),
+			round(m.ResponseReceiveLatencies.Mean),
+			round(m.ResponseReceiveLatencies.P50),
+			round(m.ResponseReceiveLatencies.P90),
+			round(m.ResponseReceiveLatencies.P95),
+			round(m.ResponseReceiveLatencies.P99),
+			round(m.ResponseReceiveLatencies.Max),
+
 			m.BytesIn.Total, m.BytesIn.Mean,
 			m.BytesOut.Total, m.BytesOut.Mean,
 
 			m.DialCount, float64(m.DialCount)/float64(m.Requests),
 			m.ConnectionsReused,  float64(m.ConnectionsReused)/float64(m.Requests),
 			m.TLSHandShakeCount, float64(m.TLSHandShakeCount)/float64(m.Requests),
-			round(m.TLSHandshakeLatencies.Min),
-			round(m.TLSHandshakeLatencies.Mean),
-			round(m.TLSHandshakeLatencies.P50),
-			round(m.TLSHandshakeLatencies.P90),
-			round(m.TLSHandshakeLatencies.P95),
-			round(m.TLSHandshakeLatencies.P99),
-			round(m.TLSHandshakeLatencies.Max),
 
 
 			m.Success*100,

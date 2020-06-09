@@ -429,17 +429,22 @@ func (ct *HttpTraceStats) ToResult(res *Result) {
 
 	markTime := ct.start
 
-	res.RequestConnectLatency = ct.channelEnd.Sub(markTime)
-	markTime = ct.channelEnd
+	res.TotalConnectLatency = ct.channelEnd.Sub(markTime)
+
 	if ct.dialled && !ct.dialEnd.IsZero() {
 		res.DialLatency = ct.dialEnd.Sub(ct.dialStart)
 		res.Dialled = true
+		markTime = ct.tlsHandShakeDone
 	}
 
 	if ct.tls && !ct.tlsHandShakeDone.IsZero() {
 		res.ServerHandshakeLatency = ct.tlsHandShakeDone.Sub(ct.tlsHandShakeStart)
 		res.TLSServerHandshake = true
+		markTime = ct.tlsHandShakeDone
 	}
+
+	markTime = ct.channelEnd
+
 
 	if !ct.headersSent.IsZero() {
 		res.HeaderSendLatency = ct.headersSent.Sub(markTime)
@@ -450,6 +455,8 @@ func (ct *HttpTraceStats) ToResult(res *Result) {
 		}
 		if !ct.timeOfFirstResponseByte.IsZero() {
 			res.ResponseFirstByteLatency = ct.timeOfFirstResponseByte.Sub(markTime)
+
+			res.ResponseReceiveLatency = time.Now().Sub(ct.timeOfFirstResponseByte)
 		}
 	}
 
